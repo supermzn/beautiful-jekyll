@@ -22,9 +22,10 @@ allprojects {
 
 Then in your **app gradle** add these two lines
 ```gradle
-implementation "android.arch.persistence.room:runtime:1.0.0"
-kapt "android.arch.persistence.room:compiler:1.0.0"
+implementation "android.arch.persistence.room:runtime:1.1.0"
+kapt "android.arch.persistence.room:compiler:1.1.0"
 ```
+_Check the newest stable version [here](https://developer.android.com/topic/libraries/architecture/adding-components.html)._
 
 {: .box-note}
 **Note:** If you use **Java**, you have to change _kapt_ to _annotationProcessor_. Also you don't need to _apply_ it as instructed below.
@@ -172,5 +173,21 @@ dao.getAllHats()  //returns [hat1, hat3]
 
 Pretty easy, right? **Not so fast!** Reading/writing data might be time consuming. It is good to introduce some *async task* when you perform these actions. Actually it is required by Room when reading data. If you try to run a ```Query``` method with a ```SELECT``` operation on UI thread, Room will throw ```IllegalStateException``` with the following message: _Cannot access database on the main thread since it may potentially lock the UI for a long period of time_.
 
+So how to run a code asynchronously in Kotlin? The easiest solution is to use [Anko](https://github.com/Kotlin/anko)!
+Add it to your project:
+```gradle
+dependencies {
+    compile "org.jetbrains.anko:anko:$anko_version"
+}
+```
+_Check the newest stable version [here](https://plugins.jetbrains.com/plugin/7734-anko-support)._
+Then just start another thread in a ```doAsync``` block. To do work on main thread use ```uiThread```.
+{% highlight kotlin %}
+doAsync {
+    mHatsList = dao.getAllHats()
+    uiThread {
+      mView.displayHats(mHatsList)
+    }
+{% endhighlight %}
 
-If you want to see a full, working implementation, go to my application [quick notes](https://github.com/supermzn/quick-notes/tree/master/app/src/main/java/com/example/mazena/quicknotes/data).
+If you want to see a full, working implementation, visit my project [quick notes](https://github.com/supermzn/quick-notes/tree/master/app/src/main/java/com/example/mazena/quicknotes/data).
