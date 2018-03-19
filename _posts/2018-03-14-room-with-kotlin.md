@@ -112,8 +112,28 @@ Keep creating seperate DAOs for each of your tables.
 
 #### Wrap it up into database
 Here comes the last part of our setup. The database class.
+You need an abstract class which extends RoomDatabase. Room will generate necessary implementation.
+First, take a look at the annotation.
+```kotlin
+@Database(entities = arrayOf(Hat::class, Shoe::class, Puppy::class), version = 1)
+```
+It requires an array of entities classes, and the current version. Each entity reflects to a single table.  
+Whenever you make changes to your schema, don't forget to raise the version of your database. Otherwise you will be served with a happy ```IllegalStateException```.  
+
+Next, declare here the abstract properties for each of your DAOs. You will use them, to access your perviously declared methods.
 
 ```kotlin
+abstract val hatDao: HatDao
+```
+The instance of the database itself you can access using a ```Room.databaseBuilder()```. Just pass context, the class of your database, and a String with its name.
+
+{: .box-note}
+**Note:** You can use also ```Room.inMemoryDatabaseBuilder()``` which is perfect for tests. This database will not be saved to the device's storage. You can put there any trash and don't bother to clean it.
+
+It is highly recommended to create an instance of the database as a singleton. Opening a database everytime it is needed might slow down the execution of the code. Also typically there is no need to have more than one database instance at the same time.
+Kotlin has a bit different approach for singletons. You can use an _object expression_ to make it work. If you feel like you need to learn a bit more about it - [click here](https://kotlinlang.org/docs/reference/object-declarations.html).
+
+{% highlight kotlin %}
 @Database(entities = arrayOf(Hat::class), version = 1)
 abstract class HatDatabase : RoomDatabase() {
 
@@ -132,4 +152,25 @@ abstract class HatDatabase : RoomDatabase() {
         }
     }
 }
-```
+{% endhighlight %}  
+
+
+#### OK I have a database. How can I use it?
+
+That is actually a good question. Yet the answer is simple.
+1. Get the database instance
+2. Access DAO
+3. Call a method on DAO
+
+{% highlight kotlin %}
+val database = HatDatabase.getInstance(mContext)
+val dao = database.hatDao
+dao.insertHats(hat1, hat2, hat3)
+dao.deleteHat(hat2)
+dao.getAllHats()  //returns [hat1, hat3]
+{% endhighlight %}
+
+Pretty easy, right? **Not so fast!** Reading/writing data might be time consuming. It is good to introduce some *async task* when you perform these actions. Actually it is required by Room when reading data. If you try to run a ```Query``` method with a ```SELECT``` operation on UI thread, Room will throw ```IllegalStateException``` with the following message: _Cannot access database on the main thread since it may potentially lock the UI for a long period of time_.
+
+
+If you want to see a full, working implementation, go to my application [quick notes](https://github.com/supermzn/quick-notes/tree/master/app/src/main/java/com/example/mazena/quicknotes/data).
