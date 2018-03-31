@@ -134,7 +134,7 @@ The instance of the database itself you can access using a ```Room.databaseBuild
 It is highly recommended to create an instance of the database as a singleton. Opening a database everytime it is needed might slow down the execution of the code. Also typically there is no need to have more than one database instance at the same time.
 Kotlin has a bit different approach for singletons. You can use an _object expression_ to make it work. If you feel like you need to learn a bit more about it - [click here](https://kotlinlang.org/docs/reference/object-declarations.html).
 
-{% highlight kotlin %}
+```kotlin
 @Database(entities = arrayOf(Hat::class), version = 1)
 abstract class HatDatabase : RoomDatabase() {
 
@@ -153,8 +153,7 @@ abstract class HatDatabase : RoomDatabase() {
         }
     }
 }
-{% endhighlight %}  
-
+```
 
 #### OK I have a database. How can I use it?
 
@@ -163,13 +162,13 @@ That is actually a good question. Yet the answer is simple.
 2. Access DAO
 3. Call a method on DAO
 
-{% highlight kotlin %}
+```kotlin
 val database = HatDatabase.getInstance(mContext)
 val dao = database.hatDao
 dao.insertHats(hat1, hat2, hat3)
 dao.deleteHat(hat2)
 dao.getAllHats()  //returns [hat1, hat3]
-{% endhighlight %}
+```
 
 Pretty easy, right? **Not so fast!** Reading/writing data might be time consuming. It is good to introduce some *async task* when you perform these actions. Actually it is required by Room when reading data. If you try to run a ```Query``` method with a ```SELECT``` operation on UI thread, Room will throw ```IllegalStateException``` with the following message: _Cannot access database on the main thread since it may potentially lock the UI for a long period of time_.
 
@@ -180,14 +179,14 @@ dependencies {
     compile "org.jetbrains.anko:anko:$anko_version"
 }
 ```
-_Check the newest stable version [here](https://plugins.jetbrains.com/plugin/7734-anko-support)._
+_Check the newest stable version [here](https://plugins.jetbrains.com/plugin/7734-anko-support)._  
 Then just start another thread in a ```doAsync``` block. To do work on main thread use ```uiThread```.
-{% highlight kotlin %}
+```kotlin
 doAsync {
     mHatsList = dao.getAllHats()
     uiThread {
       mView.displayHats(mHatsList)
     }
-{% endhighlight %}
+```
 
 If you want to see a full, working implementation, visit my project [quick notes](https://github.com/supermzn/quick-notes/tree/master/app/src/main/java/com/example/mazena/quicknotes/data).
